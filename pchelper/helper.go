@@ -97,9 +97,9 @@ loop:
 				break loop
 			}
 
+		default:
+			time.Sleep(5 * time.Second)
 		}
-
-		time.Sleep(1 * time.Second)
 	}
 
 	defer func() {
