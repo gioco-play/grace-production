@@ -65,39 +65,35 @@ sign:
 	}()
 }
 
-func (s *Set) Produce(c Ch, f func(Ch)) {
+type ProduceFunc func(Ch, ...interface{})
+
+func (s *Set) Produce(f ProduceFunc, c Ch, params ...interface{}) {
 	s.Add(1)
-	f(c)
+	f(c, params...)
 	defer func() {
 		fmt.Println("生產者關閉")
 		s.Done()
 	}()
 }
 
-func (s *Set) Comsume(c Ch, f func(interface{})) {
+type ComsumeFunc func(interface{}, ...interface{})
+
+func (s *Set) Comsume(f ComsumeFunc, c Ch, params ...interface{}) {
 	s.Add(1)
 	flag := false
-	i := 0
 loop:
 	for {
 		select {
 		case v, ok := <-c.Get():
 			if ok {
-				i++
-				fmt.Println("=======")
-				fmt.Println(i)
-				fmt.Println(">", ok, c.Len())
-				f(v)
+				f(v, params...)
 
 			} else {
 				flag = true
-				fmt.Println("no ok~", ok)
 				break loop
 			}
-		case _, oq := <-s.Ctx.Done():
-			fmt.Println("ctx", c.Len(), flag)
+		case <-s.Ctx.Done():
 			if flag {
-				fmt.Println("ctx", oq)
 				break loop
 			}
 
@@ -119,42 +115,28 @@ type Ch interface {
 	Close()
 }
 
-// type Ch1 struct {
-// 	Ch chan chanx.T
-// }
-//
-// func (c Ch1) Get() <-chan chanx.T {
-// 	return c.Ch
-// }
-//
-// func (c Ch1) Set(i interface{}) {
-// 	c.Ch <- i
-// }
-//
-// func (c Ch1) Len() int {
-// 	return len(c.Ch)
-// }
-//
-// func (c Ch1) Close() {
-// 	close(c.Ch)
-// }
-
 type Chx struct {
 	Ch *chanx.UnboundedChan
 }
 
-func (c Chx) Get() <-chan chanx.T {
+func NewChx(u *chanx.UnboundedChan) *Chx {
+	return &Chx{
+		Ch: u,
+	}
+}
+
+func (c *Chx) Get() <-chan chanx.T {
 	return c.Ch.Out
 }
 
-func (c Chx) Set(i interface{}) {
+func (c *Chx) Set(i interface{}) {
 	c.Ch.In <- i
 }
 
-func (c Chx) Len() int {
+func (c *Chx) Len() int {
 	return c.Ch.Len()
 }
 
-func (c Chx) Close() {
+func (c *Chx) Close() {
 	close(c.Ch.In)
 }
