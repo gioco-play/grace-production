@@ -65,11 +65,11 @@ sign:
 	}()
 }
 
-type ProduceFunc func(Ch, ...interface{})
+type ProduceFunc func(*Set, Ch, ...interface{})
 
 func (s *Set) Produce(f ProduceFunc, c Ch, params ...interface{}) {
 	s.Add(1)
-	f(c, params...)
+	f(s, c, params...)
 	defer func() {
 		fmt.Println("生產者關閉")
 		s.Done()
@@ -98,7 +98,7 @@ loop:
 			}
 
 		default:
-			time.Sleep(5 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 
