@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 )
 
 type Set struct {
@@ -76,32 +75,13 @@ func (s *Set) Produce(f ProduceFunc, c Ch, params ...interface{}) {
 	}()
 }
 
-type ComsumeFunc func(interface{}, ...interface{})
+//type ComsumeFunc func(interface{}, ...interface{})
+
+type ComsumeFunc func(*Set, Ch, ...interface{})
 
 func (s *Set) Comsume(f ComsumeFunc, c Ch, params ...interface{}) {
 	s.Add(1)
-	flag := false
-loop:
-	for {
-		select {
-		case v, ok := <-c.Get():
-			if ok {
-				f(v, params...)
-
-			} else {
-				flag = true
-				break loop
-			}
-		case <-s.Ctx.Done():
-			if flag {
-				break loop
-			}
-
-		default:
-			time.Sleep(1 * time.Second)
-		}
-	}
-
+	f(s, c, params...)
 	defer func() {
 		fmt.Println("消費者關閉")
 		s.Done()
