@@ -40,6 +40,10 @@ func (s *Set) Wait() {
 	s.Wg.Wait()
 }
 
+func (s *Set) SetSignal(n os.Signal) {
+	s.Signal <- n
+}
+
 func (s *Set) Background() {
 	s.Add(1)
 	signal.Notify(s.Signal, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM,
