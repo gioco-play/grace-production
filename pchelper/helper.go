@@ -15,7 +15,8 @@ type Set struct {
 	Signal    chan os.Signal
 	Ctx       context.Context
 	CtxCancel context.CancelFunc
-	Close     bool
+	Exit      bool
+	mux       sync.RWMutex
 }
 
 func New() *Set {
@@ -24,12 +25,14 @@ func New() *Set {
 		Signal:    make(chan os.Signal, 1),
 		Ctx:       ctx,
 		CtxCancel: cancel,
-		Close:     false,
+		Exit:      false,
 	}
 }
 
 func (s *Set) Add(i int) {
+	s.mux.Lock()
 	s.Wg.Add(i)
+	s.mux.Unlock()
 }
 
 func (s *Set) Done() {
@@ -44,6 +47,19 @@ func (s *Set) SetSignal(n os.Signal) {
 	s.Signal <- n
 }
 
+func (s *Set) IsClose() (state bool) {
+	s.mux.RLock()
+	state = s.Exit
+	s.mux.RUnlock()
+	return
+}
+
+func (s *Set) Close() {
+	s.mux.Lock()
+	s.Exit = true
+	s.mux.Unlock()
+}
+
 func (s *Set) Background() {
 	s.Add(1)
 	signal.Notify(s.Signal, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM,
@@ -52,8 +68,8 @@ sign:
 	for f := range s.Signal {
 		switch f {
 		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-			if !s.Close {
-				s.Close = true
+			if !s.IsClose() {
+				s.Close()
 				s.CtxCancel()
 				break sign
 			}
