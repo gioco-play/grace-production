@@ -36,11 +36,15 @@ func (s *Set) Add(i int) {
 }
 
 func (s *Set) Done() {
+	s.mux.Lock()
 	s.Wg.Done()
+	s.mux.Unlock()
 }
 
 func (s *Set) Wait() {
+	s.mux.Lock()
 	s.Wg.Wait()
+	s.mux.Unlock()
 }
 
 func (s *Set) SetSignal(n os.Signal) {
