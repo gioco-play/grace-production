@@ -31,8 +31,8 @@ func New() *Set {
 
 func (s *Set) Add(i int) {
 	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.Wg.Add(i)
-	s.mux.Unlock()
 }
 
 func (s *Set) Done() {
@@ -49,15 +49,15 @@ func (s *Set) SetSignal(n os.Signal) {
 
 func (s *Set) IsClose() (state bool) {
 	s.mux.RLock()
+	defer s.mux.RUnlock()
 	state = s.Exit
-	s.mux.RUnlock()
 	return
 }
 
 func (s *Set) Close() {
 	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.Exit = true
-	s.mux.Unlock()
 }
 
 func (s *Set) Background() {
