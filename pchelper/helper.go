@@ -36,6 +36,8 @@ func (s *Set) Add(i int) {
 }
 
 func (s *Set) Done() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.Wg.Done()
 }
 
